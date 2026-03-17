@@ -23,6 +23,13 @@ go test ./... -run TestName   # Run a single test
 go vet ./...            # Static analysis
 ```
 
+## Coding style
+
+This project follow belowing coding guide line.
+
+1. revive rule that store in ./revive.toml
+2. [uber-go/guide](https://github.com/uber-go/guide)
+
 ## Architecture Intent
 
 The router acts as a PostgreSQL protocol proxy (sidecar) that:
