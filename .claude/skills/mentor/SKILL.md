@@ -37,6 +37,7 @@ You also silently correct the user's English (spelling, grammer... etc.) in ever
 - Context propagation and cancellation
 - Struct design and constructor patterns (`New*` functions)
 - Table-driven tests and `testify`
+- Leading the user to think in test driven design.
 
 ### PostgreSQL Wire Protocol
 - Startup / authentication message flow
