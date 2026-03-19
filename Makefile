@@ -7,11 +7,11 @@ run: ## Run go-pg-router
 	@go run $(MAIN_PATH)
 
 .PHONY: build
-build: ## Build go-pg-writer
+build: ## Build go-pg-router
 	@go build -o $(BINARY_NAME) $(MAIN_PATH)
 
 .PHONY: clean
-clean: ## Clean binary file of go-pg-writer
+clean: ## Clean binary file of go-pg-router
 	@go clean
 	@rm $(BINARY_NAME)
 

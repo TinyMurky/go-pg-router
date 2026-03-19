@@ -55,15 +55,15 @@ func (suite *ListenerTestSuite) TestListenerHandleConn() {
 	defer l.Close()
 
 	go func() {
-		err := tcpListener.Start(l)
-		assert.NoError(err, "Expect no error when tcp listener listen to localhost:0")
+		_ = tcpListener.Start(l)
 	}()
 
 	conn, err := net.Dial("tcp", l.Addr().String())
 
 	assert.NoError(err, "Expect no error when dial to tcp listen")
 
-	conn.Write(wantByte)
+	_, err = conn.Write(wantByte)
+	assert.NoError(err, "Expect no error when writing to conn")
 	conn.Close() // send EOF, so that ReadFrom can return
 
 	got := <-ch

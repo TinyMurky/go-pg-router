@@ -32,7 +32,7 @@ func (tl *TCPListener) Start(l net.Listener) error {
 		conn, err := l.Accept()
 
 		if err != nil {
-			// if the conn is closed intentially,
+			// if the conn is closed intentionally,
 			// stop the loop
 			if errors.Is(err, net.ErrClosed) {
 				return nil
