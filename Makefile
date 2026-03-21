@@ -13,7 +13,11 @@ build: ## Build go-pg-router
 .PHONY: clean
 clean: ## Clean binary file of go-pg-router
 	@go clean
-	@rm $(BINARY_NAME)
+	@rm -f $(BINARY_NAME)
+
+.PHONY: test
+test: ## Run all tests with race detector
+	@go test -race ./...
 
 .PHONY:  help
 help: ## Show help message

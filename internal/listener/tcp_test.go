@@ -30,10 +30,6 @@ func (eh *EchoHandler) Handle(conn net.Conn) {
 	eh.writeCh <- eh.buf.String()
 }
 
-func (eh *EchoHandler) String() string {
-	return eh.buf.String()
-}
-
 type ListenerTestSuite struct {
 	suite.Suite
 }

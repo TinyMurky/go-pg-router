@@ -40,7 +40,7 @@ func (tl *TCPListener) Start(l net.Listener) error {
 
 			// TODO: use zaplogger instead
 			slog.Error("Accepting Connection", "error", err)
-			// becareful, this will keep on reconnect
+			// Be careful, this will keep on reconnect
 			continue
 		}
 
