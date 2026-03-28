@@ -1,0 +1,109 @@
+package pgproto
+
+import (
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+)
+
+// StartupMessage will parse Start Up Messages from client,
+// then interact with client.
+//
+// postgreSQL doc: https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-START-UP
+type StartupMessage struct {
+	ProtocolVersion uint32
+	Parameters      map[string]string
+}
+
+// ReadStartupMessage should parse the start up message.
+//
+// Structure of Start up message looks like:
+//
+//	| 4 bytes: total message length (including these 4 bytes) |
+//	| 4 bytes: protocol version (3.0 = 0x00030000)            |
+//	| key\0value\0key\0value\0 ... \0                          |
+//
+// The key-value pairs are null-terminated strings. For example:
+//
+//	user\0tinymurky\0database\0mydb\0\0
+//
+// (The final \0 signals the end of the list.)
+func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
+	var totalLength uint32
+	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
+		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read total length bytes: %w", err))
+	}
+
+	var protocolVersion uint32
+
+	if err := binary.Read(r, binary.BigEndian, &protocolVersion); err != nil {
+		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w", err))
+	}
+
+	// Should we check version?
+
+	sm.ProtocolVersion = protocolVersion
+
+	// Since the incomming net.Conn will not be close
+	// we used totalLength to determine how many bytes we will read
+
+	// 4 for length of totalLength
+	// 4 for length of ProtocolVersion
+	lenOfKV := totalLength - 4 - 4
+
+	kvBuf := make([]byte, lenOfKV)
+
+	if _, err := io.ReadFull(r, kvBuf); err != nil {
+		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w", err))
+	}
+
+	// \000 in golang is \0 in c
+	splitedKV := strings.Split(string(kvBuf), "\000")
+
+	if len(splitedKV)%2 != 0 {
+		return errors.Join(ErrInvaidMsgFormat, errors.New("ReadStartupMessage read key value pairs bytes: key value is not paired one by one"))
+	}
+
+	sm.Parameters = make(map[string]string)
+	for i := 0; i+1 < len(splitedKV); i += 2 {
+		k := splitedKV[i]
+
+		// KV looks like: user\0tinymurky\0database\0mydb\0\0
+		// it will end with extra \0
+		// the last part of kv split will be k = "" and v = ""
+		if k == "" {
+			break
+		}
+		v := splitedKV[i+1]
+		sm.Parameters[k] = v
+	}
+
+	return nil
+}
+
+// WriteAuthOK will return client with AuthenticationOk,
+// AuthenticationOk originally returned then client pass authentication by providede password,
+// but go-pg-route will returned WriteAuthOK when connect to client nomatter what (fake it),
+// So that we can garentee create connection with client (and since go-pg-route is just work as proxy, we don't need authentication)
+func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
+	if _, err := w.Write(StartUPAuthenticationOk()); err != nil {
+		return fmt.Errorf("WriteAuthOK: %w", err)
+	}
+
+	return nil
+}
+
+// WriteReadyForQuery will return ReadyForQuery Message to client,
+// message should be send after WriteAuthOK,
+// this message is telling client that they can send rest of SQL
+func (sm *StartupMessage) WriteReadyForQuery(w io.Writer) error {
+
+	if _, err := w.Write(StartUPReadyForQuery()); err != nil {
+
+		return fmt.Errorf("WriteReadyForQuery: %w", err)
+	}
+
+	return nil
+}
