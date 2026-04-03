@@ -3,15 +3,15 @@ package pgproto
 import (
 	"errors"
 	"fmt"
-	"io"
+	"net"
 )
 
 var (
 	// ErrConnectionClose means that tcp connection is closed,
-	// it can be identified as EOF too.
-	ErrConnectionClose = fmt.Errorf("connection closed: %w", io.EOF)
+	// it can be identified as net.ErrClosed too.
+	ErrConnectionClose = fmt.Errorf("connection closed: %w", net.ErrClosed)
 
-	// ErrInvaidMsgFormat means that msg read from client or PostgreSQL
+	// ErrInvalidMsgFormat means that msg read from client or PostgreSQL
 	// does not follow PostgreSQL message format
-	ErrInvaidMsgFormat = errors.New("invalid message format")
+	ErrInvalidMsgFormat = errors.New("invalid message format")
 )

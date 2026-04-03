@@ -33,13 +33,13 @@ type StartupMessage struct {
 func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	var totalLength uint32
 	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
-		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read total length bytes: %w", err))
+		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read total length bytes: %w", err))
 	}
 
 	var protocolVersion uint32
 
 	if err := binary.Read(r, binary.BigEndian, &protocolVersion); err != nil {
-		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w", err))
+		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w", err))
 	}
 
 	// Should we check version?
@@ -56,14 +56,14 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	kvBuf := make([]byte, lenOfKV)
 
 	if _, err := io.ReadFull(r, kvBuf); err != nil {
-		return errors.Join(ErrInvaidMsgFormat, fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w", err))
+		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w", err))
 	}
 
 	// \000 in golang is \0 in c
 	splitedKV := strings.Split(string(kvBuf), "\000")
 
 	if len(splitedKV)%2 != 0 {
-		return errors.Join(ErrInvaidMsgFormat, errors.New("ReadStartupMessage read key value pairs bytes: key value is not paired one by one"))
+		return errors.Join(ErrInvalidMsgFormat, errors.New("ReadStartupMessage read key value pairs bytes: key value is not paired one by one"))
 	}
 
 	sm.Parameters = make(map[string]string)

@@ -91,7 +91,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_InvalidMsgFormat() 
 	startUpMessage := new(pgproto.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(testStartupMsg))
 
-	assert.ErrorIs(err, pgproto.ErrInvaidMsgFormat)
+	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort() {
@@ -115,7 +115,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort
 	startUpMessage := new(pgproto.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvaidMsgFormat)
+	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong() {
@@ -139,7 +139,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong(
 	startUpMessage := new(pgproto.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvaidMsgFormat)
+	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
@@ -159,7 +159,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
 	startUpMessage := new(pgproto.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvaidMsgFormat)
+	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestWriteAuthOK() {
