@@ -37,7 +37,7 @@ func (h *PGHandler) Handle(conn net.Conn) {
 	}
 }
 
-// handleStartupMessage will handle the first message client send to go-pg-route
+// handleStartupMessage will handle the first message client send to go-pg-router
 // when client try to establish connection.
 //
 // First, client will send Startup Message, handler will parse key-value pairs from message
@@ -51,14 +51,6 @@ func (h *PGHandler) Handle(conn net.Conn) {
 // send the rest of SQL queries to us
 func (h *PGHandler) handleStartupMessage(rw io.ReadWriter) error {
 	if err := h.startupMsgHandler.ReadStartupMessage(rw); err != nil {
-		if errors.Is(err, ErrInvalidMsgFormat) {
-			return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", err)
-		}
-
-		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", ErrConnectionClosed)
-		}
-
 		return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", err)
 	}
 
