@@ -67,14 +67,14 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectCloseImediately() {
 	pgHandler := pgproto.NewPGHandler()
 
 	client, server := net.Pipe()
-	defer server.Close()
 
 	done := make(chan struct{})
 
 	go func() {
+		defer server.Close()
 		pgHandler.Handle(server)
 
-		// This make sure that server close after client.Close()
+		// signal that Handle returned, so the test can verify it didn't block
 		done <- struct{}{}
 	}()
 
@@ -96,14 +96,13 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectDropMidStartup() {
 	pgHandler := pgproto.NewPGHandler()
 
 	client, server := net.Pipe()
-	defer server.Close()
-
 	done := make(chan struct{})
 
 	go func() {
+		defer server.Close()
 		pgHandler.Handle(server)
 
-		// This make sure that server close after client.Close()
+		// signal that Handle returned, so the test can verify it didn't block
 		done <- struct{}{}
 	}()
 
