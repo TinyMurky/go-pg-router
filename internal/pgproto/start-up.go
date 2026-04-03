@@ -2,6 +2,7 @@ package pgproto
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -32,12 +33,18 @@ type StartupMessage struct {
 func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	var totalLength uint32
 	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			return fmt.Errorf("ReadStartupMessage read total length bytes: %w: %w", ErrConnectionClosed, err)
+		}
 		return fmt.Errorf("ReadStartupMessage read total length bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
 	var protocolVersion uint32
 
 	if err := binary.Read(r, binary.BigEndian, &protocolVersion); err != nil {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			return fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w: %w", ErrConnectionClosed, err)
+		}
 		return fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
@@ -55,6 +62,9 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	kvBuf := make([]byte, lenOfKV)
 
 	if _, err := io.ReadFull(r, kvBuf); err != nil {
+		if errors.Is(err, io.ErrUnexpectedEOF) {
+			return fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w: %w", ErrConnectionClosed, err)
+		}
 		return fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
@@ -85,7 +95,7 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 // WriteAuthOK will return client with AuthenticationOk,
 // AuthenticationOk originally returned then client pass authentication by provided password,
 // but go-pg-router will return WriteAuthOK when connect to client no matter what (fake it),
-// So that we can garantee create connection with client (and since go-pg-router is just work as proxy, we don't need authentication)
+// So that we can guarantee create connection with client (and since go-pg-router is just work as proxy, we don't need authentication)
 func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 	if _, err := w.Write(StartUPAuthenticationOk()); err != nil {
 		return fmt.Errorf("WriteAuthOK: %w", err)
