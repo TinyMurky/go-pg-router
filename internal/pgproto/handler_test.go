@@ -1,10 +1,11 @@
 package pgproto_test
 
 import (
-	"context"
+	"encoding/binary"
 	"io"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -61,35 +62,67 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup() {
 }
 
 func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectCloseImediately() {
-	// t := suite.T()
-	assert := suite.Assert()
+	t := suite.T()
 
 	pgHandler := pgproto.NewPGHandler()
 
 	client, server := net.Pipe()
+	defer server.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
 
 	go func() {
 		pgHandler.Handle(server)
 
 		// This make sure that server close after client.Close()
-		<-ctx.Done()
-		server.Close()
+		done <- struct{}{}
 	}()
 
-	// client close imediatly
 	client.Close()
 
-	buf := make([]byte, 1)
-	_, err := server.Read(buf)
+	select {
+	case <-done:
+		// pass test
+	case <-time.After(time.Second):
+		t.Fatal("goroutine did not return on time")
+	}
+}
 
-	// Makesure client close => read => server close
-	cancel()
+func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectDropMidStartup() {
+	t := suite.T()
 
-	// Server should be closed too
-	assert.ErrorIs(err, io.EOF)
+	assert := suite.Assert()
 
+	pgHandler := pgproto.NewPGHandler()
+
+	client, server := net.Pipe()
+	defer server.Close()
+
+	done := make(chan struct{})
+
+	go func() {
+		pgHandler.Handle(server)
+
+		// This make sure that server close after client.Close()
+		done <- struct{}{}
+	}()
+
+	// write 4 byte into server and close
+	var testTotalLength uint32 = 10
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, testTotalLength)
+
+	_, err := client.Write(buf)
+	assert.NoError(err)
+
+	client.Close()
+
+	select {
+	case <-done:
+		// pass test
+	case <-time.After(time.Second):
+		t.Fatal("goroutine did not return on time")
+	}
 }
 
 func TestPGHandlerTestSuite(t *testing.T) {
