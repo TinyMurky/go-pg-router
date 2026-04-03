@@ -19,6 +19,10 @@ clean: ## Clean binary file of go-pg-router
 test: ## Run all tests with race detector
 	@go test -race ./...
 
+.PHONY: psql-test-conn-no-ssh
+psql-test-conn: ## Run psql to test if it can connect to go-pg-router
+	psql -h localhost -p 3000 -U anyuser -d "dbname=anydb sslmode=disable"
+
 .PHONY:  help
 help: ## Show help message
 	@echo "Usage: make <target>"

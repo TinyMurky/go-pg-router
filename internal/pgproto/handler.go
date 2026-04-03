@@ -61,5 +61,6 @@ func (h *PGHandler) handleStartupMessage(rw io.ReadWriter) error {
 		return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", err)
 	}
 
+	slog.Debug("handle startup message success")
 	return nil
 }
