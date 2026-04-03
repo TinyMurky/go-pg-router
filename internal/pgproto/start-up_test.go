@@ -50,18 +50,18 @@ func BuildBinaryKV(t testing.TB, kv map[string]string) []byte {
 	return buf.Bytes()
 }
 
-func BuildCustomStartupMsg(t testing.TB, totalLength uint32, protocal uint32, binaryKV []byte) []byte {
+func BuildCustomStartupMsg(t testing.TB, totalLength uint32, protocol uint32, binaryKV []byte) []byte {
 	t.Helper()
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.BigEndian, totalLength)
-	binary.Write(buf, binary.BigEndian, protocal)
+	binary.Write(buf, binary.BigEndian, protocol)
 	binary.Write(buf, binary.BigEndian, binaryKV)
 	return buf.Bytes()
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_HappyPass() {
 	t := suite.T()
-	t.Parallel()
+
 	assert := suite.Assert()
 	// golang use \000 as null in c
 	wantKVs := map[string]string{
@@ -81,9 +81,6 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_HappyPass() {
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_InvalidMsgFormat() {
-	t := suite.T()
-	t.Parallel()
-
 	assert := suite.Assert()
 
 	testStartupMsg := []byte("invalid msg")
@@ -96,7 +93,6 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_InvalidMsgFormat() 
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort() {
 	t := suite.T()
-	t.Parallel()
 
 	assert := suite.Assert()
 
@@ -120,7 +116,6 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong() {
 	t := suite.T()
-	t.Parallel()
 
 	assert := suite.Assert()
 
@@ -144,15 +139,14 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong(
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
 	t := suite.T()
-	t.Parallel()
 
 	assert := suite.Assert()
 
-	binaryTestKVs := []byte("a\000\000")
+	binaryTestKVs := []byte("a\000\000") // 3 bytes
 
 	var testProtocol uint32 = 0x00030000
 	// total message lenght should be 4 bytes too
-	var testTotalLength uint32 = 4 + 4 + 1
+	var testTotalLength uint32 = 4 + 4 + 3
 
 	msg := BuildCustomStartupMsg(t, testTotalLength, testProtocol, binaryTestKVs)
 

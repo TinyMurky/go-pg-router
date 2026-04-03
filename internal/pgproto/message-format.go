@@ -1,7 +1,7 @@
 package pgproto
 
 // This file store "Message Formats" that was mentioned in:
-// https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-START-UP
+// https://www.postgresql.org/docs/18/protocol-message-formats.html
 // The meaning of these "Message Formats" can be found in Chapter 54.2:
 // https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-START-UP
 

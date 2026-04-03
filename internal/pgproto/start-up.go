@@ -2,7 +2,6 @@ package pgproto
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -11,7 +10,7 @@ import (
 // StartupMessage will parse Start Up Messages from client,
 // then interact with client.
 //
-// postgreSQL doc: https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-START-UP
+// PostgreSQL doc: https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-START-UP
 type StartupMessage struct {
 	ProtocolVersion uint32
 	Parameters      map[string]string
@@ -33,13 +32,13 @@ type StartupMessage struct {
 func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	var totalLength uint32
 	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
-		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read total length bytes: %w", err))
+		return fmt.Errorf("ReadStartupMessage read total length bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
 	var protocolVersion uint32
 
 	if err := binary.Read(r, binary.BigEndian, &protocolVersion); err != nil {
-		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w", err))
+		return fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
 	// Should we check version?
@@ -56,14 +55,14 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	kvBuf := make([]byte, lenOfKV)
 
 	if _, err := io.ReadFull(r, kvBuf); err != nil {
-		return errors.Join(ErrInvalidMsgFormat, fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w", err))
+		return fmt.Errorf("ReadStartupMessage read key value pairs bytes: %w: %w", ErrInvalidMsgFormat, err)
 	}
 
 	// \000 in golang is \0 in c
 	splitedKV := strings.Split(string(kvBuf), "\000")
 
 	if len(splitedKV)%2 != 0 {
-		return errors.Join(ErrInvalidMsgFormat, errors.New("ReadStartupMessage read key value pairs bytes: key value is not paired one by one"))
+		return fmt.Errorf("ReadStartupMessage: %w : read key value pairs bytes: key value is not paired one by one", ErrInvalidMsgFormat)
 	}
 
 	sm.Parameters = make(map[string]string)
@@ -84,9 +83,9 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 }
 
 // WriteAuthOK will return client with AuthenticationOk,
-// AuthenticationOk originally returned then client pass authentication by providede password,
-// but go-pg-route will returned WriteAuthOK when connect to client nomatter what (fake it),
-// So that we can garentee create connection with client (and since go-pg-route is just work as proxy, we don't need authentication)
+// AuthenticationOk originally returned then client pass authentication by provided password,
+// but go-pg-router will return WriteAuthOK when connect to client no matter what (fake it),
+// So that we can garantee create connection with client (and since go-pg-router is just work as proxy, we don't need authentication)
 func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 	if _, err := w.Write(StartUPAuthenticationOk()); err != nil {
 		return fmt.Errorf("WriteAuthOK: %w", err)
@@ -97,7 +96,7 @@ func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 
 // WriteReadyForQuery will return ReadyForQuery Message to client,
 // message should be send after WriteAuthOK,
-// this message is telling client that they can send rest of SQL
+// this message is telling client that they can send the rest of the SQL queries
 func (sm *StartupMessage) WriteReadyForQuery(w io.Writer) error {
 
 	if _, err := w.Write(StartUPReadyForQuery()); err != nil {

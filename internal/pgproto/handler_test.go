@@ -1,6 +1,7 @@
 package pgproto_test
 
 import (
+	"context"
 	"io"
 	"net"
 	"testing"
@@ -42,7 +43,7 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup() {
 
 	wantedAuthOK := make([]byte, len(pgproto.StartUPAuthenticationOk()))
 
-	// use ReadFull so thai it will throw error if Handler doesn't write enough bytes
+	// use ReadFull so that it will return an error if Handler doesn't write enough bytes
 	// (it will throw unexpected EOF)
 	n, err := io.ReadFull(client, wantedAuthOK)
 	assert.NoError(err)
@@ -51,7 +52,7 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup() {
 
 	wantedReadyForQuery := make([]byte, len(pgproto.StartUPReadyForQuery()))
 
-	// use ReadFull so thai it will throw error if Handler doesn't write enough bytes
+	// use ReadFull so that it will return an error if Handler doesn't write enough bytes
 	// (it will throw unexpected EOF)
 	n, err = io.ReadFull(client, wantedReadyForQuery)
 	assert.NoError(err)
@@ -67,9 +68,14 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectCloseImediately() {
 
 	client, server := net.Pipe()
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	go func() {
-		defer server.Close()
 		pgHandler.Handle(server)
+
+		// This make sure that server close after client.Close()
+		<-ctx.Done()
+		server.Close()
 	}()
 
 	// client close imediatly
@@ -77,6 +83,9 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectCloseImediately() {
 
 	buf := make([]byte, 1)
 	_, err := server.Read(buf)
+
+	// Makesure client close => read => server close
+	cancel()
 
 	// Server should be closed too
 	assert.ErrorIs(err, io.EOF)

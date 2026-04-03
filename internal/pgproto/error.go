@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	// ErrConnectionClose means that tcp connection is closed,
+	// ErrConnectionClosed means that tcp connection is closed,
 	// it can be identified as net.ErrClosed too.
-	ErrConnectionClose = fmt.Errorf("connection closed: %w", net.ErrClosed)
+	ErrConnectionClosed = fmt.Errorf("connection closed: %w", net.ErrClosed)
 
 	// ErrInvalidMsgFormat means that msg read from client or PostgreSQL
 	// does not follow PostgreSQL message format

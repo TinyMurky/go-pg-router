@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-// PGHandler is for handling tcp connection formatted in PostgreSQL protocal.
+// PGHandler is for handling tcp connection formatted in PostgreSQL protocol.
 //
 // PGHandler implements the listener.Handler interface
 type PGHandler struct {
@@ -27,20 +27,12 @@ func NewPGHandler() *PGHandler {
 	}
 }
 
-// Handle can hande tcp connetions from a client which were formatted in PostgreSQL protocal
+// Handle can hande tcp connetions from a client which were formatted in PostgreSQL protocol
 func (h *PGHandler) Handle(conn net.Conn) {
+	// err might be ErrConnectionClosed or ErrInvalidMsgFormat or others
 	if err := h.handleStartupMessage(conn); err != nil {
-		if errors.Is(err, ErrConnectionClose) {
-			slog.Error("handleStartupMessage: unexpected connection closed", "error", err)
-			return
-		}
-
-		if errors.Is(err, ErrInvalidMsgFormat) {
-			slog.Error("handleStartupMessage: invalid msg format", "error", err)
-			return
-		}
 		// TODO: use zaplogger instead
-		slog.Error("handleStartupMessage: ", "error", err)
+		slog.Error("handleStartupMessage:", "error", err)
 		return
 	}
 }
@@ -64,7 +56,7 @@ func (h *PGHandler) handleStartupMessage(rw io.ReadWriter) error {
 		}
 
 		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", ErrConnectionClose)
+			return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", ErrConnectionClosed)
 		}
 
 		return fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", err)
@@ -72,14 +64,14 @@ func (h *PGHandler) handleStartupMessage(rw io.ReadWriter) error {
 
 	if err := h.startupMsgHandler.WriteAuthOK(rw); err != nil {
 		if errors.Is(err, net.ErrClosed) {
-			return fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", ErrConnectionClose)
+			return fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", ErrConnectionClosed)
 		}
 		return fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", err)
 	}
 
 	if err := h.startupMsgHandler.WriteReadyForQuery(rw); err != nil {
 		if errors.Is(err, net.ErrClosed) {
-			return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", ErrConnectionClose)
+			return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", ErrConnectionClosed)
 		}
 		return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", err)
 	}
