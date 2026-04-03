@@ -1,7 +1,6 @@
 package pgproto
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,7 +26,7 @@ func NewPGHandler() *PGHandler {
 	}
 }
 
-// Handle can hande tcp connetions from a client which were formatted in PostgreSQL protocol
+// Handle can handle tcp connections from a client which were formatted in PostgreSQL protocol
 func (h *PGHandler) Handle(conn net.Conn) {
 	// err might be ErrConnectionClosed or ErrInvalidMsgFormat or others
 	if err := h.handleStartupMessage(conn); err != nil {
@@ -55,16 +54,10 @@ func (h *PGHandler) handleStartupMessage(rw io.ReadWriter) error {
 	}
 
 	if err := h.startupMsgHandler.WriteAuthOK(rw); err != nil {
-		if errors.Is(err, net.ErrClosed) {
-			return fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", ErrConnectionClosed)
-		}
 		return fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", err)
 	}
 
 	if err := h.startupMsgHandler.WriteReadyForQuery(rw); err != nil {
-		if errors.Is(err, net.ErrClosed) {
-			return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", ErrConnectionClosed)
-		}
 		return fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", err)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"strings"
 )
 
@@ -52,7 +53,7 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 
 	sm.ProtocolVersion = protocolVersion
 
-	// Since the incomming net.Conn will not be close
+	// Since the incoming net.Conn will not be closed
 	// we used totalLength to determine how many bytes we will read
 
 	// 4 for length of totalLength
@@ -98,6 +99,10 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 // So that we can guarantee create connection with client (and since go-pg-router is just work as proxy, we don't need authentication)
 func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 	if _, err := w.Write(StartUPAuthenticationOk()); err != nil {
+		// io.ErrClosedPipe to detect connection close if w is net.Pipe
+		if errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
+			return fmt.Errorf("WriteAuthOK: %w : %w", ErrConnectionClosed, err)
+		}
 		return fmt.Errorf("WriteAuthOK: %w", err)
 	}
 
@@ -108,9 +113,11 @@ func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 // message should be send after WriteAuthOK,
 // this message is telling client that they can send the rest of the SQL queries
 func (sm *StartupMessage) WriteReadyForQuery(w io.Writer) error {
-
 	if _, err := w.Write(StartUPReadyForQuery()); err != nil {
-
+		// io.ErrClosedPipe to detect connection close if w is net.Pipe
+		if errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
+			return fmt.Errorf("WriteReadyForQuery: %w :%w", ErrConnectionClosed, err)
+		}
 		return fmt.Errorf("WriteReadyForQuery: %w", err)
 	}
 
