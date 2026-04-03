@@ -58,6 +58,9 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 
 	// 4 for length of totalLength
 	// 4 for length of ProtocolVersion
+	if totalLength < 8 {
+		return fmt.Errorf("ReadStartupMessage: %w: total length %d is too short (minimum 8)", ErrInvalidMsgFormat, totalLength)
+	}
 	lenOfKV := totalLength - 4 - 4
 
 	kvBuf := make([]byte, lenOfKV)
@@ -101,7 +104,7 @@ func (sm *StartupMessage) WriteAuthOK(w io.Writer) error {
 	if _, err := w.Write(StartUPAuthenticationOk()); err != nil {
 		// io.ErrClosedPipe to detect connection close if w is net.Pipe
 		if errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
-			return fmt.Errorf("WriteAuthOK: %w : %w", ErrConnectionClosed, err)
+			return fmt.Errorf("WriteAuthOK: %w: %w", ErrConnectionClosed, err)
 		}
 		return fmt.Errorf("WriteAuthOK: %w", err)
 	}
@@ -116,7 +119,7 @@ func (sm *StartupMessage) WriteReadyForQuery(w io.Writer) error {
 	if _, err := w.Write(StartUPReadyForQuery()); err != nil {
 		// io.ErrClosedPipe to detect connection close if w is net.Pipe
 		if errors.Is(err, net.ErrClosed) || errors.Is(err, io.ErrClosedPipe) {
-			return fmt.Errorf("WriteReadyForQuery: %w :%w", ErrConnectionClosed, err)
+			return fmt.Errorf("WriteReadyForQuery: %w: %w", ErrConnectionClosed, err)
 		}
 		return fmt.Errorf("WriteReadyForQuery: %w", err)
 	}

@@ -55,7 +55,7 @@ func realMain(ctx context.Context) error {
 	pgHandler := pgproto.NewPGHandler()
 	tcpListener := listener.New(pgHandler)
 
-	// tcpListener work in seperated goroutine
+	// tcpListener work in separated goroutine
 	go tcpListener.Start(l)
 
 	slog.Info("go-pg-router start listening at:", "address", address)
