@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+// Startup Massage maximum will be 10_000 bytes
+// Ref: PostgreSQL src/include/libpq/pqcomm.h
+const maxStartupMsgSize = 10_000
+
 // StartupMessage will parse Start Up Messages from client,
 // then interact with client.
 //
@@ -60,6 +64,10 @@ func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
 	// 4 for length of ProtocolVersion
 	if totalLength < 8 {
 		return fmt.Errorf("ReadStartupMessage: %w: total length %d is too short (minimum 8)", ErrInvalidMsgFormat, totalLength)
+	}
+	if totalLength > maxStartupMsgSize {
+		// When totalLength > maxStartupMsgSize, most likely because grabage input.
+		return fmt.Errorf("ReadStartupMessage: %w: total length %d is too long (maximum %d)", ErrInvalidMsgFormat, totalLength, maxStartupMsgSize)
 	}
 	lenOfKV := totalLength - 4 - 4
 

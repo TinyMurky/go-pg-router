@@ -134,7 +134,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong(
 	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgserver.ErrInvalidMsgFormat)
+	assert.ErrorIs(err, pgserver.ErrConnectionClosed)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
