@@ -6,11 +6,6 @@ import (
 	"net"
 )
 
-// Handler will do "Handle" to the connection
-type Handler interface {
-	Handle(conn net.Conn)
-}
-
 // TCPListener will handle connection
 type TCPListener struct {
 	handler Handler
