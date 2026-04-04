@@ -1,4 +1,4 @@
-package pgproto
+package pgserver
 
 // This file store "Message Formats" that was mentioned in:
 // https://www.postgresql.org/docs/18/protocol-message-formats.html

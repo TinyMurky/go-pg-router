@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/TinyMurky/go-pg-router/internal/listener"
-	"github.com/TinyMurky/go-pg-router/internal/pgproto"
+	pgserver "github.com/TinyMurky/go-pg-router/internal/pgserver"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func realMain(ctx context.Context) error {
 	// Close will unblock l.Accept
 	defer l.Close()
 
-	pgHandler := pgproto.NewPGHandler()
+	pgHandler := pgserver.NewPGHandler()
 	tcpListener := listener.New(pgHandler)
 
 	// tcpListener work in separated goroutine

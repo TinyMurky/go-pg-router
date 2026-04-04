@@ -1,4 +1,4 @@
-package pgproto
+package pgserver
 
 import (
 	"errors"

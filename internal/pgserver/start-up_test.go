@@ -1,4 +1,4 @@
-package pgproto_test
+package pgserver_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/TinyMurky/go-pg-router/internal/pgproto"
+	"github.com/TinyMurky/go-pg-router/internal/pgserver"
 )
 
 type StartupMessageTestSuite struct {
@@ -71,7 +71,7 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_HappyPass() {
 
 	testStartupMsg, wantProtocol := BuildStarupMessage(t, wantKVs)
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(testStartupMsg))
 
 	assert.NoError(err)
@@ -83,12 +83,12 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_HappyPass() {
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_InvalidMsgFormat() {
 	assert := suite.Assert()
 
-	testStartupMsg := []byte("invalid msg")
+	testStartupMsg := []byte("invalid long long msg")
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(testStartupMsg))
 
-	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
+	assert.ErrorIs(err, pgserver.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort() {
@@ -108,10 +108,10 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooShort
 
 	msg := BuildCustomStartupMsg(t, testTotalLength, testProtocol, binaryTestKVs)
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
+	assert.ErrorIs(err, pgserver.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong() {
@@ -131,10 +131,10 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_TotalLengthTooLong(
 
 	msg := BuildCustomStartupMsg(t, testTotalLength, testProtocol, binaryTestKVs)
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
+	assert.ErrorIs(err, pgserver.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
@@ -150,20 +150,20 @@ func (suite *StartupMessageTestSuite) TestReadStartupMessage_KVWrongFormat() {
 
 	msg := BuildCustomStartupMsg(t, testTotalLength, testProtocol, binaryTestKVs)
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 	err := startUpMessage.ReadStartupMessage(bytes.NewReader(msg))
 
-	assert.ErrorIs(err, pgproto.ErrInvalidMsgFormat)
+	assert.ErrorIs(err, pgserver.ErrInvalidMsgFormat)
 }
 
 func (suite *StartupMessageTestSuite) TestWriteAuthOK() {
 
 	assert := suite.Assert()
-	want := pgproto.StartUPAuthenticationOk()
+	want := pgserver.StartUPAuthenticationOk()
 
 	var testBuf bytes.Buffer
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 
 	err := startUpMessage.WriteAuthOK(&testBuf)
 	assert.NoError(err)
@@ -174,11 +174,11 @@ func (suite *StartupMessageTestSuite) TestWriteAuthOK() {
 func (suite *StartupMessageTestSuite) TestWriteReadyForQuery() {
 
 	assert := suite.Assert()
-	want := pgproto.StartUPReadyForQuery()
+	want := pgserver.StartUPReadyForQuery()
 
 	var testBuf bytes.Buffer
 
-	startUpMessage := new(pgproto.StartupMessage)
+	startUpMessage := new(pgserver.StartupMessage)
 
 	err := startUpMessage.WriteReadyForQuery(&testBuf)
 
