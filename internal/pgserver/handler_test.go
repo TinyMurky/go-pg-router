@@ -1,4 +1,4 @@
-package pgserver_test
+package pgserver
 
 import (
 	"encoding/binary"
@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-
-	"github.com/TinyMurky/go-pg-router/internal/pgserver"
 )
 
 type PGHandlerTestSuite struct {
@@ -29,7 +27,7 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup() {
 
 	testStartupMsg, _ := BuildStarupMessage(t, wantKVs)
 
-	pgHandler := pgserver.NewPGHandler()
+	pgHandler := NewPGHandler()
 
 	client, server := net.Pipe()
 	defer client.Close()
@@ -42,29 +40,29 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup() {
 	_, err := client.Write(testStartupMsg)
 	assert.NoError(err)
 
-	wantedAuthOK := make([]byte, len(pgserver.StartUPAuthenticationOk()))
+	wantedAuthOK := make([]byte, len(StartUPAuthenticationOk()))
 
 	// use ReadFull so that it will return an error if Handler doesn't write enough bytes
 	// (it will throw unexpected EOF)
 	n, err := io.ReadFull(client, wantedAuthOK)
 	assert.NoError(err)
-	assert.Equal(len(pgserver.StartUPAuthenticationOk()), n)
-	assert.Equal(pgserver.StartUPAuthenticationOk(), wantedAuthOK)
+	assert.Equal(len(StartUPAuthenticationOk()), n)
+	assert.Equal(StartUPAuthenticationOk(), wantedAuthOK)
 
-	wantedReadyForQuery := make([]byte, len(pgserver.StartUPReadyForQuery()))
+	wantedReadyForQuery := make([]byte, len(StartUPReadyForQuery()))
 
 	// use ReadFull so that it will return an error if Handler doesn't write enough bytes
 	// (it will throw unexpected EOF)
 	n, err = io.ReadFull(client, wantedReadyForQuery)
 	assert.NoError(err)
-	assert.Equal(len(pgserver.StartUPReadyForQuery()), n)
-	assert.Equal(pgserver.StartUPReadyForQuery(), wantedReadyForQuery)
+	assert.Equal(len(StartUPReadyForQuery()), n)
+	assert.Equal(StartUPReadyForQuery(), wantedReadyForQuery)
 }
 
 func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectCloseImediately() {
 	t := suite.T()
 
-	pgHandler := pgserver.NewPGHandler()
+	pgHandler := NewPGHandler()
 
 	client, server := net.Pipe()
 
@@ -93,7 +91,7 @@ func (suite *PGHandlerTestSuite) TestHandle_Startup_ConnectDropMidStartup() {
 
 	assert := suite.Assert()
 
-	pgHandler := pgserver.NewPGHandler()
+	pgHandler := NewPGHandler()
 
 	client, server := net.Pipe()
 	done := make(chan struct{})

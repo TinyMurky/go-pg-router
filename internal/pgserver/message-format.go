@@ -24,3 +24,21 @@ func StartUPReadyForQuery() []byte {
 		byte('I'),
 	}
 }
+
+// SSLRequest will be send by client before StartupMessage if client is using SSL connecting mode
+//
+// ref: https://www.postgresql.org/docs/current/protocol-message-formats.html#PROTOCOL-MESSAGE-FORMATS-SSLREQUEST
+func SSLRequest() []byte {
+	return []byte{
+		// 0x00, 0x00, 0x00, 0x08, // First 4 byte is Length of message contents in bytes, including self.
+		0x04, 0xD2, 0x16, 0x2F, // The value is chosen to contain 1234 in the most significant 16 bits, and 5679 in the least significant 16 bits.
+	}
+}
+
+// SSLRequestReject is used to reject to use SSL connection to connect client
+// may be returned after SSLRequest
+//
+// ref: https://www.postgresql.org/docs/current/protocol-flow.html#PROTOCOL-FLOW-SSL
+func SSLRequestReject() []byte {
+	return []byte{byte('N')}
+}
