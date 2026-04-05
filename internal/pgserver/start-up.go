@@ -36,39 +36,15 @@ type StartupMessage struct {
 //
 // (The final \0 signals the end of the list.)
 func (sm *StartupMessage) ReadStartupMessage(r io.Reader) error {
-	var totalLength uint32
-	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
-		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-			return fmt.Errorf("ReadStartupMessage read total length bytes: %w: %w", ErrConnectionClosed, err)
-		}
-		return fmt.Errorf("ReadStartupMessage read total length bytes: %w: %w", ErrInvalidMsgFormat, err)
+	totalLength, protocolVersionBuf, err := readMsgHeader(r)
+
+	if err != nil {
+		return fmt.Errorf("ReadStartupMessage: %w", err)
 	}
-
-	var protocolVersion uint32
-
-	if err := binary.Read(r, binary.BigEndian, &protocolVersion); err != nil {
-		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-			return fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w: %w", ErrConnectionClosed, err)
-		}
-		return fmt.Errorf("ReadStartupMessage read protocolVersion bytes: %w: %w", ErrInvalidMsgFormat, err)
-	}
-
 	// Should we check version?
 
-	sm.ProtocolVersion = protocolVersion
+	sm.ProtocolVersion = binary.BigEndian.Uint32(protocolVersionBuf)
 
-	// Since the incoming net.Conn will not be closed
-	// we used totalLength to determine how many bytes we will read
-
-	// 4 for length of totalLength
-	// 4 for length of ProtocolVersion
-	if totalLength < 8 {
-		return fmt.Errorf("ReadStartupMessage: %w: total length %d is too short (minimum 8)", ErrInvalidMsgFormat, totalLength)
-	}
-	if totalLength > maxStartupMsgSize {
-		// When totalLength > maxStartupMsgSize, most likely because grabage input.
-		return fmt.Errorf("ReadStartupMessage: %w: total length %d is too long (maximum %d)", ErrInvalidMsgFormat, totalLength, maxStartupMsgSize)
-	}
 	lenOfKV := totalLength - 4 - 4
 
 	kvBuf := make([]byte, lenOfKV)
@@ -133,4 +109,41 @@ func (sm *StartupMessage) WriteReadyForQuery(w io.Writer) error {
 	}
 
 	return nil
+}
+
+// readMsgHeader will read first four bytes to get totalLength of TCP Message from client,
+// then read next 4 bytes to get whether SLL request code or protocol version
+// return will be (totalLength uint32, code []byte, err error)
+func readMsgHeader(r io.Reader) (uint32, []byte, error) {
+	var totalLength uint32
+	if err := binary.Read(r, binary.BigEndian, &totalLength); err != nil {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			return 0, nil, fmt.Errorf("readMsgHeader: read total length bytes: %w: %w", ErrConnectionClosed, err)
+		}
+		return 0, nil, fmt.Errorf("readMsgHeader: read total length bytes: %w: %w", ErrInvalidMsgFormat, err)
+	}
+
+	// Since the incoming net.Conn will not be closed
+	// we used totalLength to determine how many bytes we will read
+	// 4 for length of totalLength
+	// 4 for length of SSLRequest or ProtocolVersion
+	if totalLength < 8 {
+		return 0, nil, fmt.Errorf("readMsgHeader: %w: total length %d is too short (minimum 8)", ErrInvalidMsgFormat, totalLength)
+	}
+	if totalLength > maxStartupMsgSize {
+		// When totalLength > maxStartupMsgSize, most likely because grabage input.
+		// SSLRequest will be only 8 bytes long
+		return 0, nil, fmt.Errorf("readMsgHeader: %w: total length %d is too long (maximum %d)", ErrInvalidMsgFormat, totalLength, maxStartupMsgSize)
+	}
+
+	code := make([]byte, 4)
+
+	if _, err := io.ReadFull(r, code); err != nil {
+		if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			return 0, nil, fmt.Errorf("readMsgHeader: read code bytes: %w: %w", ErrConnectionClosed, err)
+		}
+		return 0, nil, fmt.Errorf("readMsgHeader: code bytes: %w: %w", ErrInvalidMsgFormat, err)
+	}
+
+	return totalLength, code, nil
 }

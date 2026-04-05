@@ -31,7 +31,7 @@ func (suite *SSLTestSuite) TestReedSSLPrStartup_StartWithSSLThenStartupMessage()
 
 	testStartupMsg, _ := BuildStarupMessage(t, testKVs)
 
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	go func() {
 
 		// goroutine (client) ──writes SSL probe──► server (readSSLOrStartup reads it)
@@ -172,6 +172,66 @@ func (suite *SSLTestSuite) TestReedSSLPrStartup_StartWithInvalidSSLRequest() {
 	case <-time.After(time.Second):
 		t.Fatal("goroutine did not return on time")
 	}
+}
+
+func (suite *SSLTestSuite) TestReedSSLPrStartup_StartWithSSLTwiceThenStartupMessage() {
+	t := suite.T()
+	assert := suite.Assert()
+
+	client, server := net.Pipe()
+	defer server.Close()
+
+	testSSLRequest := BuildSSLRequestMessage(t)
+
+	// golang use \000 as null in c
+	testKVs := map[string]string{
+		"testA": "3",
+		"testB": "ball",
+	}
+
+	testStartupMsg, _ := BuildStarupMessage(t, testKVs)
+
+	errCh := make(chan error, 5)
+	go func() {
+
+		// goroutine (client) ──writes SSL probe──► server (readSSLOrStartup reads it)
+		// goroutine (client) ◄──writes 'N'──────── server (readSSLOrStartup writes it)
+
+		defer client.Close()
+
+		_, err := client.Write(testSSLRequest)
+		errCh <- err
+
+		nBuf1 := make([]byte, len(SSLRequestReject()))
+
+		_, err = client.Read(nBuf1)
+		errCh <- err
+
+		_, err = client.Write(testSSLRequest)
+		errCh <- err
+
+		nBuf2 := make([]byte, len(SSLRequestReject()))
+
+		_, err = client.Read(nBuf2)
+		errCh <- err
+
+		_, err = client.Write(testStartupMsg)
+		errCh <- err
+
+		close(errCh)
+	}()
+
+	got, err := readSSLOrStartup(server)
+	assert.NoError(err)
+
+	assert.Equal(testStartupMsg, got)
+
+	// drain the error channel
+
+	for err := range errCh {
+		assert.NoError(err)
+	}
+
 }
 
 func TestSSLMessageTestSuite(t *testing.T) {

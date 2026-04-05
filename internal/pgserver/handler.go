@@ -2,7 +2,6 @@ package pgserver
 
 import (
 	"bytes"
-	"fmt"
 	"log/slog"
 	"net"
 )
@@ -11,7 +10,6 @@ import (
 //
 // PGHandler implements the listener.Handler interface
 type PGHandler struct {
-	startupMsgHandler *StartupMessage
 }
 
 // NewPGHandler creates a handler
@@ -21,9 +19,7 @@ type PGHandler struct {
 // This handler acts as proxy to forward connections from
 // client to PostgreSQL.
 func NewPGHandler() *PGHandler {
-	return &PGHandler{
-		startupMsgHandler: &StartupMessage{},
-	}
+	return &PGHandler{}
 }
 
 // Handle can handle tcp connections from a client which were formatted in PostgreSQL protocol
@@ -32,9 +28,11 @@ func (h *PGHandler) Handle(conn net.Conn) {
 	// close connection immediately
 	defer conn.Close()
 
+	// sm will be created in every connection
+	sm := &StartupMessage{}
+
 	startupMsgBytes, err := readSSLOrStartup(conn)
 	if err != nil {
-		err = fmt.Errorf("readSSLOrStartup: %w", err)
 		slog.Error("PGHandler.Handle:", "error", err)
 		return
 	}
@@ -52,22 +50,17 @@ func (h *PGHandler) Handle(conn net.Conn) {
 	// Third, handler will send back ReadyForQuery to client, this will tell client to
 	// send the rest of SQL queries to us
 
-	if err := h.startupMsgHandler.ReadStartupMessage(bytes.NewReader(startupMsgBytes)); err != nil {
-		err = fmt.Errorf("startupMsgHandler.ReadStartupMessage: %w", err)
-
+	if err := sm.ReadStartupMessage(bytes.NewReader(startupMsgBytes)); err != nil {
 		slog.Error("PGHandler.Handle:", "error", err)
 		return
 	}
 
-	if err := h.startupMsgHandler.WriteAuthOK(conn); err != nil {
-		err = fmt.Errorf("startupMsgHandler.WriteAuthOK: %w", err)
+	if err := sm.WriteAuthOK(conn); err != nil {
 		slog.Error("PGHandler.Handle:", "error", err)
 		return
 	}
 
-	if err := h.startupMsgHandler.WriteReadyForQuery(conn); err != nil {
-		err = fmt.Errorf("startupMsgHandler.WriteReadyForQuery: %w", err)
-
+	if err := sm.WriteReadyForQuery(conn); err != nil {
 		slog.Error("PGHandler.Handle:", "error", err)
 		return
 	}

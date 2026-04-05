@@ -17,32 +17,10 @@ import (
 // SSLRequest: https://www.postgresql.org/docs/current/protocol-message-formats.html#PROTOCOL-MESSAGE-FORMATS-SSLREQUEST
 func readSSLOrStartup(rw io.ReadWriter) ([]byte, error) {
 	for {
-		var totalLength uint32
-		if err := binary.Read(rw, binary.BigEndian, &totalLength); err != nil {
-			if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("readSSLOrStartup: read total length bytes: %w: %w", ErrConnectionClosed, err)
-			}
-			return nil, fmt.Errorf("readSSLOrStartup: read total length bytes: %w: %w", ErrInvalidMsgFormat, err)
-		}
+		totalLength, code, err := readMsgHeader(rw)
 
-		// 4 for length of totalLength
-		// 4 for length of SSLRequest or ProtocolVersion
-		if totalLength < 8 {
-			return nil, fmt.Errorf("readSSLOrStartup: %w: total length %d is too short (minimum 8)", ErrInvalidMsgFormat, totalLength)
-		}
-		if totalLength > maxStartupMsgSize {
-			// When totalLength > maxStartupMsgSize, most likely because grabage input.
-			// SSLRequest will be only 8 bytes long
-			return nil, fmt.Errorf("readSSLOrStartup: %w: total length %d is too long (maximum %d)", ErrInvalidMsgFormat, totalLength, maxStartupMsgSize)
-		}
-
-		code := make([]byte, 4)
-
-		if _, err := io.ReadFull(rw, code); err != nil {
-			if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("readSSLOrStartup: read code bytes: %w: %w", ErrConnectionClosed, err)
-			}
-			return nil, fmt.Errorf("readSSLOrStartup: code bytes: %w: %w", ErrInvalidMsgFormat, err)
+		if err != nil {
+			return nil, fmt.Errorf("readSSLOrStartup: %w", err)
 		}
 
 		if isSSLRequest(code) {
@@ -62,7 +40,7 @@ func readSSLOrStartup(rw io.ReadWriter) ([]byte, error) {
 		_ = binary.Write(buf, binary.BigEndian, code)
 		lenOfKV := totalLength - 4 - 4
 		if _, err := io.CopyN(buf, rw, int64(lenOfKV)); err != nil {
-			if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
+			if errors.Is(err, io.EOF) {
 
 				return nil, fmt.Errorf("readSSLOrStartup: %w: %w", ErrConnectionClosed, err)
 			}
